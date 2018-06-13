@@ -45,6 +45,7 @@ struct table_entry {
  *		     de-allocate memory for values on remove/kill.
  *
  * Return: Pointer to a new table.
+ * Simplified asymptotic complexity analysis : O(1)
  */
 table *table_empty(compare_function *key_cmp_func,
 		   free_function key_free_func,
@@ -67,6 +68,7 @@ table *table_empty(compare_function *key_cmp_func,
  * @table: Table to check.
  *
  * Return: True if table contains no key/value pairs, false otherwise.
+ * Simplified asymptotic complexity analysis : O(1)
  */
 bool table_is_empty(const table *t)
 {
@@ -85,6 +87,7 @@ bool table_is_empty(const table *t)
  * duplicates for a given key.
  *
  * Returns: Nothing.
+ * Simplified asymptotic complexity analysis : O(1)
  */
 void table_insert(table *t, void *key, void *value)
 {
@@ -106,22 +109,18 @@ void table_insert(table *t, void *key, void *value)
  * Return: The value corresponding to a given key, or NULL if the key
  * is not found in the table. If the table contains duplicate keys,
  * the value that was latest inserted will be returned.
+ * Simplified asymptotic complexity analysis : O(n)
  */
 void *table_lookup(const table *t, const void *key)
 {
-	// Iterate over the list. Return first match.
 	dlist_pos pos = dlist_first(t->entries);
-
+	//Traverse through the list, return if key found.
 	while (!dlist_is_end(t->entries, pos)) {
 		// Inspect the table entry
-		//struct table_entry *entry = dlist_inspect(t->entries, pos);
 		struct table_entry *entry = dlist_inspect(t->entries, pos);
 		// Check if the entry key matches the search key.
 		if (t->key_cmp_func(entry->key, key) == 0) {
 			// If yes, return the corresponding value pointer.
-			//printf("entry->key = %s\n", entry->key);
-			//printf("entry->value = %s\n", entry->value);
-			//dlist_insert(t->entries, entry, dlist_first(t->entries));
 			table_insert((table*)t, entry->key, entry->value);
 			dlist_remove(t->entries, pos);
 			entry = dlist_inspect(t->entries, dlist_first(t->entries));
@@ -144,13 +143,12 @@ void *table_lookup(const table *t, const void *key)
  * the table.
  *
  * Returns: Nothing.
+ * Simplified asymptotic complexity analysis : O(n)
  */
 void table_remove(table *t, const void *key)
 {
-	// Iterate over the list. Remove any entries with matching keys.
-
+	// Traverse through the list. Remove any entries with matching keys.
 	dlist_pos pos = dlist_first(t->entries);
-
 	while (!dlist_is_end(t->entries, pos)) {
 		// Inspect the table entry
 		struct table_entry *entry = dlist_inspect(t->entries, pos);
@@ -184,16 +182,16 @@ void table_remove(table *t, const void *key)
  * occupied by the element values.
  *
  * Returns: Nothing.
+ * Simplified asymptotic complexity analysis : O(n)
  */
 void table_kill(table *t)
 {
-	// Iterate over the list. Destroy all elements.
+	// Traverse through the list. Destroy all elements.
 	dlist_pos pos = dlist_first(t->entries);
-
 	while (!dlist_is_end(t->entries, pos)) {
 		// Inspect the key/value pair.
 		struct table_entry *entry = dlist_inspect(t->entries, pos);
-		// Free key and/or value if given the authority to do so.
+		// Free key and value.
 		if (t->key_free_func != NULL) {
 			t->key_free_func(entry->key);
 		}
@@ -204,22 +202,19 @@ void table_kill(table *t)
 		pos = dlist_next(t->entries, pos);
 	}
 
-	// Kill what's left of the list...
+	// Remove actual list.
 	dlist_kill(t->entries);
-	// ...and the table.
 	free(t);
 }
 
 void table_print(const table *t, inspect_callback_pair print_func)
 {
-	// Iterate over all elements. Call print_func on keys/values.
+	// Traverse through all elements. Call print_func on keys/values.
 	dlist_pos pos = dlist_first(t->entries);
-
 	while (!dlist_is_end(t->entries, pos)) {
 		struct table_entry *e = dlist_inspect(t->entries, pos);
 		// Call print_func
 		print_func(e->key, e->value);
-
 		pos = dlist_next(t->entries, pos);
 	}
 }
